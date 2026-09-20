@@ -1,0 +1,43 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+        - database
+        - tests
+
+    # Level 6 is the pragmatic floor for a new Laravel codebase: it demands full
+    # type coverage on signatures without drowning in Eloquent's dynamic magic.
+    # The money core (Money value object, allocation, ledger) is the part where
+    # type errors turn into wrong balances, so it is worth the friction.
+    level: 6
+
+    # Fail on annotations that claim a type PHPStan can prove wrong — a lying
+    # @return int on a money method is exactly the bug class we care about.
+    treatPhpDocTypesAsCertain: true
+
+    # app/Filament/ does not exist yet; without this an ignore pattern for a
+    # not-yet-created path is itself reported as an error.
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # Filament resources are configured through fluent builders whose static
+        # return types PHPStan cannot always follow.
+        - identifier: staticMethod.notFound
+          path: app/Filament/*
+
+        # Larastan's stub types Seeder::$command as non-nullable, but it really is
+        # null until Laravel calls setCommand() — which only happens when a seeder runs
+        # through Artisan. A seeder invoked directly would fatal on `->`, so the
+        # nullsafe operator stays and the over-confident stub is what gets ignored.
+        - identifier: nullsafe.neverNull
+          path: database/seeders/*
+
+        # Pest binds each test closure to Tests\TestCase at runtime, which
+        # PHPStan cannot see, so $this->get()/actingAs() look undefined. Scoped
+        # to tests/ only — every other type check still applies there, which is
+        # the point: the money assertions are the last place we want silent
+        # type drift.
+        - identifier: method.notFound
+          path: tests/*

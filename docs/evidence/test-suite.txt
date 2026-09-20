@@ -1,0 +1,136 @@
+
+   PASS  Tests\Unit\Allocation\AllocationStrategyTest
+  ✓ it aggregates several courses by the same instructor into one engagement
+  ✓ it orders instructors by id so downstream tie-breaking is stable
+  ✓ it reports an empty window when there was no engagement
+  ✓ equal weight → it gives every engaged instructor the same weight
+  ✓ equal weight → it counts an instructor once regardless of how many courses were watched
+  ✓ equal weight → it ignores watch time entirely — the accepted unfairness, made explicit
+  ✓ equal weight → it produces no weights for an empty window, leaving the period to the platform
+  ✓ equal weight → it is named equal_weight
+  ✓ watch time weighting → it weights strictly by seconds watched
+  ✓ watch time weighting → it splits the pool in proportion to attention delivered
+  ✓ watch time weighting → it sums watch time across an instructor's courses before weighting
+  ✓ watch time weighting → it falls back to equal weight when no watch time was recorded at all
+  ✓ watch time weighting → it gives nothing to an instructor whose course was opened but never watched
+  ✓ watch time weighting → it produces no weights for an empty window
+  ✓ watch time weighting → it is named watch_time
+  ✓ it preserves the money invariant for every strategy, over random wi… 0.01s  
+
+   PASS  Tests\Unit\Money\MoneyTest
+  ✓ it adds and subtracts exactly                                        0.01s  
+  ✓ it refuses to mix currencies rather than guessing a rate
+  ✓ it treats amounts of different currencies as unequal even at the same magnitude
+  ✓ it takes a basis-point share rounded down
+  ✓ it guarantees share plus counterpart equals the whole                0.01s  
+  ✓ it splits the worked example from the architecture doc
+  ✓ it breaks ties by lowest instructor id, deterministically
+  ✓ it gives the leftover to the largest remainder, not to the first key
+  ✓ it handles a single recipient taking everything
+  ✓ it returns nothing for an empty weight set
+  ✓ it refuses to allocate against weights that sum to zero
+  ✓ it rejects negative weights
+  ✓ it splits a negative amount without losing a unit
+  ✓ it gives zero-weight recipients nothing while still summing exactly
+  ✓ it never creates or destroys money, across thousands of random spli… 0.03s  
+  ✓ it keeps every recipient within one minor unit of their exact share  0.01s  
+  ✓ it throws instead of silently becoming a float on overflow
+  ✓ it exposes no method that can return a float
+  ✓ it declares a return type on every public method
+  ✓ it formats major units for display only
+
+   PASS  Tests\Unit\Recognition\RecognitionScheduleTest
+  ✓ it splits a monthly term aligned to a calendar month into one perio… 0.03s  
+  ✓ it splits a mid-month monthly term across two calendar months
+  ✓ it splits an annual term into thirteen periods when it starts mid-month
+  ✓ it handles a leap February
+  ✓ it handles a single-day term
+  ✓ it refuses a term that ends before it starts
+  ✓ it recognises exactly the amount paid, never a piastre more or less
+  ✓ it puts the rounding residual in the final period, not the first
+  ✓ it stays exact for every plan and every possible start day of a yea… 0.52s  
+  ✓ it never recognises a negative amount in any period                  0.01s  
+  ✓ it stops recognising at the cancellation date
+  ✓ it leaves the unearned remainder refundable rather than absorbing it
+  ✓ it keeps the full term as the proration denominator after a cancellation
+  ✓ it recognises nothing when cancelled before the term began
+  ✓ it ignores a cancellation date beyond the term end
+  ✓ it is monotonic: cancelling later never recognises less              0.02s  
+  ✓ it finds a period by key
+
+   PASS  Tests\Feature\Allocation\AllocateSubscriptionPeriodTest
+  ✓ it recognises a full month, takes the platform cut and splits the r… 8.75s  
+  ✓ it keeps gross exactly equal to platform plus instructor lines       0.04s  
+  ✓ it writes one earning ledger entry per non-zero line and moves the…  0.05s  
+  ✓ it running allocation twice does not pay twice                       0.05s  
+  ✓ it running allocation ten times leaves balances untouched after the… 0.06s  
+  ✓ it the ledger unique index blocks a replay even if the allocation g… 0.04s  
+  ✓ it gives the whole period to the platform when nobody was engaged    0.02s  
+  ✓ it counts an instructor once even across several watched courses     0.05s  
+  ✓ it honours the watch-time strategy when it is the active one         0.05s  
+  ✓ it records a zero line without a ledger entry for an unwatched cour… 0.04s  
+  ✓ it uses the rate snapshotted on the subscription, not today's confi… 0.03s  
+  ✓ it skips a period before the term starts                             0.03s  
+  ✓ it skips a period after a cancellation                               0.03s  
+  ✓ it skips a subscription with no payment received                     0.02s  
+
+   PASS  Tests\Feature\AllocationStrategyResolverTest
+  ✓ it defaults to equal weight                                          0.02s  
+  ✓ it switches the active strategy from config alone                    0.01s  
+  ✓ it resolves a past allocation by the strategy name it recorded       0.01s  
+  ✓ it throws on an unregistered strategy instead of falling back to th… 0.01s  
+  ✓ it exposes both registered strategies                                0.01s  
+
+   PASS  Tests\Feature\Filament\InstructorBalanceScreenTest
+  ✓ it lists instructors with money outstanding                          0.12s  
+  ✓ it shows amounts as formatted money, never raw minor units           0.07s  
+  ✓ it separates in-flight money from outstanding money                  0.11s  
+  ✓ it surfaces a negative balance from a clawback                       0.11s  
+  ✓ it flags balances held back by the payout minimum                    0.13s  
+  ✓ it shows one instructor's position on the view page                  0.05s  
+  ✓ it lists payout history including uncertain outcomes                 0.07s  
+  ✓ it offers no way to write to the money core from the admin panel     0.06s  
+  ✓ it requires authentication                                           0.02s  
+
+   PASS  Tests\Feature\Payouts\PayoutPipelineTest
+  ✓ it pays an instructor and records it once                            0.04s  
+  ✓ it running the payout command twice never double-pays                0.05s  
+  ✓ it a third and fourth run still pay nothing further                  0.05s  
+  ✓ it two concurrent runs resolve to a single batch                     0.02s  
+  ✓ it a retried send job never sends twice                              0.04s  
+  ✓ it a job retried after the worker was killed mid-flight does not re… 0.03s  
+  ✓ it the conditional update is what stops a concurrent second worker   0.03s  
+  ✓ it a timeout after the money moved does not pay twice, and is settl… 0.04s  
+  ✓ it a timeout where nothing happened releases the money for the next… 0.03s  
+  ✓ it a second payout run cannot touch money held by an uncertain firs… 0.04s  
+  ✓ it a permanent failure releases the hold and writes no ledger entry  0.03s  
+  ✓ it the provider dedupes a resend on the same key instead of paying…  0.02s  
+  ✓ it repeated reconciliation of a settled item changes nothing         0.03s  
+  ✓ it fan-out is replayable and creates no duplicate items              0.03s  
+  ✓ it carries a below-minimum balance forward instead of paying dust    0.03s  
+  ✓ it accrues for an instructor with no payout account but does not pa… 0.02s  
+  ✓ it refuses to move a settled item back out of a terminal state       0.03s  
+
+   PASS  Tests\Feature\Refunds\ProcessRefundTest
+  ✓ it a clean mid-term refund does not touch any instructor balance     0.08s  
+  ✓ it refunds the student exactly the unearned portion                  0.07s  
+  ✓ it leaves already-earned months standing                             0.07s  
+  ✓ it stops future months from ever accruing                            0.07s  
+  ✓ it claws back only the unlived slice of the month the student left…  0.08s  
+  ✓ it splits a partial reversal in the same proportions as the origina… 0.04s  
+  ✓ it voids an allocation that ran ahead of a retroactive cancellation  0.07s  
+  ✓ it a full refund claws back everything and can drive a balance nega… 0.08s  
+  ✓ it a negative balance is never offered to a payout run               0.08s  
+  ✓ it a refund webhook delivered twice is processed once                0.07s  
+  ✓ it replaying a refund five times never moves a balance twice         0.08s  
+  ✓ it the ledger unique index blocks a second reversal of the same lin… 0.08s  
+  ✓ it leaves the ledger and its snapshots in agreement                  0.07s  
+  ✓ it keeps the original allocation intact so history stays reproducib… 0.07s  
+
+   PASS  Tests\Feature\SmokeTest
+  ✓ it serves the application root                                       0.02s  
+  ✓ it is connected to the dedicated test database                       0.01s  
+
+  Tests:    114 passed (14422 assertions)
+  Duration: 12.44s
+

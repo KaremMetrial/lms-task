@@ -1,0 +1,176 @@
+# Development topology for the Instructor Revenue Ledger.
+#
+# Six services, split so that each failure mode in the brief can actually be
+# demonstrated rather than described:
+#
+#   web        nginx, the only published HTTP entrypoint
+#   app        php-fpm, serves requests
+#   worker     consumes queued payout jobs — kill it mid-run to prove retries
+#              never double-pay
+#   scheduler  triggers the periodic payout command
+#   mysql      the ledger's source of truth
+#   redis      queue + cache + lock backend
+#
+# Build once with the host UID so bind-mounted files stay host-editable:
+#   docker compose build
+
+x-app: &app
+  build:
+    context: .
+    target: dev
+    args:
+      UID: ${UID:-1000}
+      GID: ${GID:-1000}
+  image: irl/app:dev
+  # Deliberately no `env_file:` here.
+  #
+  # The application reads .env from the bind mount, so injecting the same file
+  # as container environment variables is redundant — and harmful: PHP would
+  # then populate $_SERVER from the process environment, and Laravel's env()
+  # prefers $_SERVER over $_ENV. That silently defeats phpunit.xml's test
+  # overrides and points the suite at the development database.
+  #
+  # docker compose still reads ./.env for ${VAR} substitution in this file;
+  # that is separate from env_file and unaffected.
+  volumes:
+    - .:/var/www/html
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - backend
+  restart: unless-stopped
+  logging: &logging
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ---------------------------------------------------------------------------
+  # HTTP
+  # ---------------------------------------------------------------------------
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+    mem_limit: 128m
+    logging: *logging
+
+  app:
+    <<: *app
+    # Inherits the image's HEALTHCHECK (cgi-fcgi against php-fpm's /ping).
+
+  # ---------------------------------------------------------------------------
+  # Background processing
+  # ---------------------------------------------------------------------------
+  worker:
+    <<: *app
+    command: >
+      php artisan queue:work
+        --queue=payouts,default
+        --tries=3
+        --backoff=5
+        --max-time=3600
+    # php-fpm's /ping healthcheck is meaningless for a CLI worker.
+    healthcheck:
+      disable: true
+    # Give SIGTERM room to let an in-flight job finish before the container is
+    # killed. A worker torn down mid-provider-call is the exact scenario the
+    # ledger must survive, so we want it to be a deliberate test, not routine.
+    stop_grace_period: 30s
+    mem_limit: 512m
+
+  scheduler:
+    <<: *app
+    command: php artisan schedule:work
+    healthcheck:
+      disable: true
+    mem_limit: 256m
+
+  # Optional: Horizon's dashboard makes retries and failures visible during the
+  # walkthrough video. Off by default so it never competes with `worker` for
+  # jobs. Start with:  docker compose --profile horizon up -d horizon
+  horizon:
+    <<: *app
+    command: php artisan horizon
+    profiles: [horizon]
+    healthcheck:
+      disable: true
+    stop_grace_period: 30s
+    mem_limit: 512m
+
+  # ---------------------------------------------------------------------------
+  # Data
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.4
+    command: --mysql-native-password=ON
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-lms}
+      MYSQL_USER: ${DB_USERNAME:-lms}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      # Published on a non-default port so it cannot collide with a MySQL
+      # already running on the host.
+      - "${DB_FORWARD_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/zz-app.cnf:ro
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - backend
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    # appendonly keeps queued jobs across a restart, so a crash-and-recover demo
+    # exercises the ledger's idempotency rather than just losing the work.
+    command: redis-server --appendonly yes --save 60 1
+    ports:
+      - "${REDIS_FORWARD_PORT:-6380}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - backend
+    restart: unless-stopped
+    mem_limit: 256m
+    logging: *logging
+
+networks:
+  # Only `web` is reachable from the host network.
+  frontend:
+    driver: bridge
+  # mysql and redis live here and are never published to `frontend`.
+  backend:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
