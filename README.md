@@ -233,7 +233,7 @@ app/
   Console/Commands/           accrue, payouts, refunds, verify, benchmark
   Filament/Resources/         the read-only admin screen
 database/
-  migrations/                 15 migrations
+  migrations/                 17 migrations — 14 for the ledger, 3 Laravel defaults
   factories/ seeders/         DemoSeeder (every state) + ScaleSeeder (volume)
 docker/                       nginx, php-fpm, mysql config
 tests/

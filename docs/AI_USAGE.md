@@ -84,7 +84,7 @@ These are architecture, not code, and none came from asking "how should I build 
 
 ### Substantially AI-generated, then reviewed
 
-- Boilerplate: 15 migrations, 14 factories, 13 models with their `@property` annotations,
+- Boilerplate: 14 migrations, 14 factories, 13 models with their `@property` annotations,
   enum scaffolding, the Dockerfile and Compose topology.
 - Filament resource and relation manager wiring.
 - Test bodies, once I had specified what each test must prove. The property-test *idea*

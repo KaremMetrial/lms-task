@@ -102,7 +102,18 @@ final class RunPayouts extends Command
 
             $dispatched = $this->dispatchPending($batch->id);
 
-            $this->components->twoColumnDetail('Dispatched', (string) $dispatched);
+            // Labelled as what it is. On a replay, most of these jobs are already
+            // queued from the first run and ShouldBeUnique silently drops the
+            // duplicate — so "dispatched" would overstate the work. It is a count of
+            // pending items handed to the queue, not of jobs actually enqueued.
+            $this->components->twoColumnDetail('Pending items handed to the queue', (string) $dispatched);
+
+            if (! $claimed->wasCreated && $dispatched > 0) {
+                $this->line(
+                    '  <fg=gray>Replay: jobs already queued by the earlier run are de-duplicated by their '
+                    .'unique lock, and every send is guarded by a conditional update either way.</>'
+                );
+            }
             $this->components->info('Done. Outcomes settle asynchronously; run payouts:reconcile to resolve unknowns.');
 
             return self::SUCCESS;

@@ -67,11 +67,11 @@ final class ReconcilePayouts extends Command
                 : ReconcilePayoutItem::dispatch($item->id);
         }
 
-        $this->components->info(
-            $items->isEmpty()
-                ? 'Nothing to reconcile — every payout has a definitive outcome.'
-                : "Queued {$items->count()} status checks. No payment is ever re-sent by this command."
-        );
+        $this->components->info(match (true) {
+            $items->isEmpty() => 'Nothing to reconcile — every payout has a definitive outcome.',
+            $sync => "Ran {$items->count()} status check(s) inline. No payment is ever re-sent by this command.",
+            default => "Queued {$items->count()} status check(s). No payment is ever re-sent by this command.",
+        });
 
         return self::SUCCESS;
     }
