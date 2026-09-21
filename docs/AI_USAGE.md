@@ -129,6 +129,11 @@ a chat window.
 | A test asserting `method_exists` on two guessed names | Weak test that would miss a float accessor added under any other name |
 | `DemoSeeder` faked a paid balance by writing `paid_minor` directly | Snapshot and ledger disagreed from the first seed. Caught by `ledger:verify`, not by review |
 | `UID=$(id -u) docker compose build` in the README and Makefile | `UID` is **readonly in bash**, so the documented setup command fails before Docker runs. Found by following my own instructions from scratch |
+| The README never ran `composer install` | `vendor/` is not committed, so on a fresh clone every artisan command failed and the worker crash-looped on a missing `autoload.php`. Found by cloning the repo and following the README literally. Now `make setup`, ordered so the worker starts only after install |
+| Redis `retry_after` was 90s while `SendPayoutItem` allowed 120s | A slow provider call would be handed to a second worker while still running. The ledger survives it — the second worker finds `submitted` and exits — but that is not a reason to keep the misconfiguration. Now 180s, with a test that fails if a job timeout catches up with it |
+| Horizon supervised only `default`; every payout job is on `payouts` | The dashboard added to make the pipeline visible showed nothing of it |
+| `payouts:run` reported "Dispatched: 167" on a replay | `ShouldBeUnique` had silently dropped most of them. The number overstated the work |
+| The admin view said "held by a payout of unknown outcome" under 0.00 | A false alarm on the one screen where an operator is most likely to "fix" something by hand. Found by looking at the rendered page in a real browser |
 
 And two arithmetic errors of my own, both in test expectations rather than in the code:
 

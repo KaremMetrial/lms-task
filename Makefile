@@ -5,7 +5,7 @@ DC := docker compose
 APP := $(DC) exec -T app
 
 .DEFAULT_GOAL := help
-.PHONY: help setup env up down build restart logs shell mysql redis migrate fresh seed test test-filter stan lint lint-fix audit worker-kill horizon ps
+.PHONY: help setup env up down build restart worker logs shell mysql redis migrate fresh seed test test-filter stan lint lint-fix audit worker-kill horizon ps
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -95,5 +95,14 @@ audit: ## Report dependency advisories (3 are knowingly ignored — see composer
 worker-kill: ## Hard-kill the queue worker mid-job, to prove retries never double-pay
 	$(DC) kill -s SIGKILL worker
 
-horizon: ## Start the optional Horizon dashboard at /horizon
+horizon: ## Swap the plain worker for Horizon, with its dashboard at /horizon
+	# Horizon REPLACES the worker rather than running alongside it: both consume the
+	# payouts queue, and two consumers make the dashboard show only half the jobs.
+	$(DC) stop worker
 	$(DC) --profile horizon up -d horizon
+	@echo "  Horizon is processing payouts. Dashboard: http://localhost:$${APP_PORT:-8000}/horizon"
+	@echo "  Back to the plain worker: make worker"
+
+worker: ## Swap Horizon back out for the plain queue worker
+	-$(DC) --profile horizon stop horizon
+	$(DC) up -d worker

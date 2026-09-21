@@ -67,7 +67,19 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Must be comfortably LONGER than the slowest job's $timeout.
+            //
+            // It was 90 while SendPayoutItem allows 120s. When a job outlives
+            // retry_after, Redis hands it back to the queue and a second worker picks
+            // it up while the first is still mid-call to the payment provider — two
+            // workers executing the same payout at once.
+            //
+            // The ledger survives that: the conditional UPDATE means the second worker
+            // finds the item already 'submitted' and exits without sending. But a
+            // design that is safe under a misconfiguration is not a reason to keep
+            // the misconfiguration. tests/Unit/QueueConfigurationTest.php now fails if
+            // any payout job's timeout ever catches up with this again.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 180),
             'block_for' => null,
             'after_commit' => false,
         ],

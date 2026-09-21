@@ -604,7 +604,7 @@ adds real operational complexity and nothing in the design depends on it.
 
 ## 9b. Testing strategy
 
-114 tests, 14,422 assertions. The count is not the point; what they protect against is.
+118 tests, 14,427 assertions. The count is not the point; what they protect against is.
 
 ### Properties, not examples
 
@@ -683,6 +683,28 @@ lines, and a feature test asserts it passes after a refund. It also runs against
 seeded demonstration data — where it immediately caught the seeder faking a paid balance
 by writing `paid_minor` directly instead of paying through the pipeline. A tool that
 fails on its own author's shortcut is doing its job.
+
+### End-to-end, on a fresh clone, under a real crash
+
+Beyond the suite, the whole system was exercised from `git clone` through `make setup`
+on a clean machine state, against the real Redis queue and worker container:
+
+- 211 payouts queued; the worker **SIGKILLed** two seconds into the batch, leaving one
+  item frozen in `submitted` mid-provider-call; then `payouts:run` re-run for the same
+  period while the worker drained.
+- 49 provider timeouts, some after the money had moved, all resolved by status checks
+  the send path scheduled for itself.
+- The item killed mid-flight was **not re-sent** when the queue retried it — the
+  conditional update found it `submitted` and stopped. The stale sweep then asked the
+  provider, which had no record, and released the money.
+
+Result: zero violations across every integrity check, and the provider's own books,
+the ledger and the balance snapshots agreeing on **40,273.64 EGP paid — to the piastre.**
+
+Three configuration invariants that no behavioural test could catch — because the suite
+runs on the sync driver, where they do not exist — are now pinned by
+`tests/Feature/QueueConfigurationTest.php`: `retry_after` must exceed every payout job's
+timeout, and Horizon must supervise the queue payouts actually use. Both were wrong.
 
 ### What is deliberately not tested
 

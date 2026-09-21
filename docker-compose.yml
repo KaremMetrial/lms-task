@@ -100,9 +100,9 @@ services:
       disable: true
     mem_limit: 256m
 
-  # Optional: Horizon's dashboard makes retries and failures visible during the
-  # walkthrough video. Off by default so it never competes with `worker` for
-  # jobs. Start with:  docker compose --profile horizon up -d horizon
+  # Optional: Horizon's dashboard makes retries and failures visible. It REPLACES
+  # `worker` rather than running beside it — both would consume the payouts queue.
+  # `make horizon` stops the worker and starts this; `make worker` swaps back.
   horizon:
     <<: *app
     command: php artisan horizon

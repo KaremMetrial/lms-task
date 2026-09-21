@@ -199,7 +199,10 @@ return [
     'defaults' => [
         'supervisor-1' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            // `payouts` first. Every payout job is dispatched onto it, so a Horizon
+            // watching only `default` — as shipped — showed an empty dashboard for the
+            // entire pipeline it was added to make visible.
+            'queue' => ['payouts', 'default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,

@@ -20,7 +20,7 @@ the reasoning. [`docs/AI_USAGE.md`](docs/AI_USAGE.md) covers how AI was used.
 | **Records** | every movement in an append-only ledger, with a reconciled balance snapshot for fast reads |
 | **Pays** | instructors through a queued, idempotent payout pipeline against a deliberately unreliable provider |
 | **Refunds** | pro rata, which under ratable recognition touches no instructor balance at all |
-| **Proves** | 114 tests, 14,422 assertions, PHPStan level 6, plus a benchmark command that fails on a full table scan |
+| **Proves** | 118 tests, 14,427 assertions, PHPStan level 6, plus a benchmark command that fails on a full table scan |
 
 Answers, at any point in time: **how much each instructor is owed, how much has been
 paid, and how much is still outstanding** — from a single indexed row, never by
@@ -169,6 +169,16 @@ To see a crashed worker handled safely:
 make worker-kill      # SIGKILL mid-job
 make up               # it comes back; the item is asked about, never re-sent
 ```
+
+To watch jobs, retries and failures in a dashboard:
+
+```bash
+make horizon          # swaps the plain worker for Horizon → http://localhost:8000/horizon
+make worker           # swaps back
+```
+
+Horizon **replaces** the worker rather than running beside it, because both would
+consume the `payouts` queue.
 
 ---
 
