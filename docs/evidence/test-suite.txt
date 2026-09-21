@@ -1,6 +1,7 @@
+docker compose exec -T app php artisan test
 
    PASS  Tests\Unit\Allocation\AllocationStrategyTest
-  ✓ it aggregates several courses by the same instructor into one engagement
+  ✓ it aggregates several courses by the same instructor into one engag… 0.01s  
   ✓ it orders instructors by id so downstream tie-breaking is stable
   ✓ it reports an empty window when there was no engagement
   ✓ equal weight → it gives every engaged instructor the same weight
@@ -18,7 +19,7 @@
   ✓ it preserves the money invariant for every strategy, over random wi… 0.01s  
 
    PASS  Tests\Unit\Money\MoneyTest
-  ✓ it adds and subtracts exactly                                        0.01s  
+  ✓ it adds and subtracts exactly                                        0.02s  
   ✓ it refuses to mix currencies rather than guessing a rate
   ✓ it treats amounts of different currencies as unequal even at the same magnitude
   ✓ it takes a basis-point share rounded down
@@ -48,26 +49,26 @@
   ✓ it refuses a term that ends before it starts
   ✓ it recognises exactly the amount paid, never a piastre more or less
   ✓ it puts the rounding residual in the final period, not the first
-  ✓ it stays exact for every plan and every possible start day of a yea… 0.52s  
+  ✓ it stays exact for every plan and every possible start day of a yea… 0.54s  
   ✓ it never recognises a negative amount in any period                  0.01s  
   ✓ it stops recognising at the cancellation date
   ✓ it leaves the unearned remainder refundable rather than absorbing it
   ✓ it keeps the full term as the proration denominator after a cancellation
   ✓ it recognises nothing when cancelled before the term began
   ✓ it ignores a cancellation date beyond the term end
-  ✓ it is monotonic: cancelling later never recognises less              0.02s  
+  ✓ it is monotonic: cancelling later never recognises less              0.03s  
   ✓ it finds a period by key
 
    PASS  Tests\Feature\Allocation\AllocateSubscriptionPeriodTest
-  ✓ it recognises a full month, takes the platform cut and splits the r… 8.75s  
+  ✓ it recognises a full month, takes the platform cut and splits the r… 8.89s  
   ✓ it keeps gross exactly equal to platform plus instructor lines       0.04s  
   ✓ it writes one earning ledger entry per non-zero line and moves the…  0.05s  
   ✓ it running allocation twice does not pay twice                       0.05s  
-  ✓ it running allocation ten times leaves balances untouched after the… 0.06s  
+  ✓ it running allocation ten times leaves balances untouched after the… 0.07s  
   ✓ it the ledger unique index blocks a replay even if the allocation g… 0.04s  
-  ✓ it gives the whole period to the platform when nobody was engaged    0.02s  
+  ✓ it gives the whole period to the platform when nobody was engaged    0.03s  
   ✓ it counts an instructor once even across several watched courses     0.05s  
-  ✓ it honours the watch-time strategy when it is the active one         0.05s  
+  ✓ it honours the watch-time strategy when it is the active one         0.04s  
   ✓ it records a zero line without a ledger entry for an unwatched cour… 0.04s  
   ✓ it uses the rate snapshotted on the subscription, not today's confi… 0.03s  
   ✓ it skips a period before the term starts                             0.03s  
@@ -82,55 +83,61 @@
   ✓ it exposes both registered strategies                                0.01s  
 
    PASS  Tests\Feature\Filament\InstructorBalanceScreenTest
-  ✓ it lists instructors with money outstanding                          0.12s  
-  ✓ it shows amounts as formatted money, never raw minor units           0.07s  
+  ✓ it lists instructors with money outstanding                          0.28s  
+  ✓ it shows amounts as formatted money, never raw minor units           0.09s  
   ✓ it separates in-flight money from outstanding money                  0.11s  
-  ✓ it surfaces a negative balance from a clawback                       0.11s  
+  ✓ it surfaces a negative balance from a clawback                       0.10s  
   ✓ it flags balances held back by the payout minimum                    0.13s  
-  ✓ it shows one instructor's position on the view page                  0.05s  
-  ✓ it lists payout history including uncertain outcomes                 0.07s  
+  ✓ it shows one instructor's position on the view page                  0.06s  
+  ✓ it lists payout history including uncertain outcomes                 0.08s  
   ✓ it offers no way to write to the money core from the admin panel     0.06s  
-  ✓ it requires authentication                                           0.02s  
+  ✓ it requires authentication                                           0.04s  
 
    PASS  Tests\Feature\Payouts\PayoutPipelineTest
-  ✓ it pays an instructor and records it once                            0.04s  
+  ✓ it pays an instructor and records it once                            0.06s  
   ✓ it running the payout command twice never double-pays                0.05s  
   ✓ it a third and fourth run still pay nothing further                  0.05s  
   ✓ it two concurrent runs resolve to a single batch                     0.02s  
-  ✓ it a retried send job never sends twice                              0.04s  
+  ✓ it a retried send job never sends twice                              0.03s  
   ✓ it a job retried after the worker was killed mid-flight does not re… 0.03s  
   ✓ it the conditional update is what stops a concurrent second worker   0.03s  
-  ✓ it a timeout after the money moved does not pay twice, and is settl… 0.04s  
+  ✓ it a timeout after the money moved does not pay twice, and is settl… 0.05s  
   ✓ it a timeout where nothing happened releases the money for the next… 0.03s  
-  ✓ it a second payout run cannot touch money held by an uncertain firs… 0.04s  
-  ✓ it a permanent failure releases the hold and writes no ledger entry  0.03s  
+  ✓ it a second payout run cannot touch money held by an uncertain firs… 0.05s  
+  ✓ it a permanent failure releases the hold and writes no ledger entry  0.04s  
   ✓ it the provider dedupes a resend on the same key instead of paying…  0.02s  
-  ✓ it repeated reconciliation of a settled item changes nothing         0.03s  
+  ✓ it repeated reconciliation of a settled item changes nothing         0.04s  
   ✓ it fan-out is replayable and creates no duplicate items              0.03s  
-  ✓ it carries a below-minimum balance forward instead of paying dust    0.03s  
+  ✓ it carries a below-minimum balance forward instead of paying dust    0.02s  
   ✓ it accrues for an instructor with no payout account but does not pa… 0.02s  
   ✓ it refuses to move a settled item back out of a terminal state       0.03s  
 
+   PASS  Tests\Feature\QueueConfigurationTest
+  ✓ it releases a job only after its own timeout could have expired wit… 0.02s  
+  ✓ it releases a job only after its own timeout could have expired wit… 0.02s  
+  ✓ it has Horizon supervising the queue the payout jobs are actually d… 0.01s  
+  ✓ it dispatches reconciliation onto the same queue as sending          0.01s  
+
    PASS  Tests\Feature\Refunds\ProcessRefundTest
-  ✓ it a clean mid-term refund does not touch any instructor balance     0.08s  
+  ✓ it a clean mid-term refund does not touch any instructor balance     0.07s  
   ✓ it refunds the student exactly the unearned portion                  0.07s  
   ✓ it leaves already-earned months standing                             0.07s  
-  ✓ it stops future months from ever accruing                            0.07s  
-  ✓ it claws back only the unlived slice of the month the student left…  0.08s  
+  ✓ it stops future months from ever accruing                            0.06s  
+  ✓ it claws back only the unlived slice of the month the student left…  0.07s  
   ✓ it splits a partial reversal in the same proportions as the origina… 0.04s  
-  ✓ it voids an allocation that ran ahead of a retroactive cancellation  0.07s  
+  ✓ it voids an allocation that ran ahead of a retroactive cancellation  0.08s  
   ✓ it a full refund claws back everything and can drive a balance nega… 0.08s  
   ✓ it a negative balance is never offered to a payout run               0.08s  
   ✓ it a refund webhook delivered twice is processed once                0.07s  
-  ✓ it replaying a refund five times never moves a balance twice         0.08s  
-  ✓ it the ledger unique index blocks a second reversal of the same lin… 0.08s  
-  ✓ it leaves the ledger and its snapshots in agreement                  0.07s  
-  ✓ it keeps the original allocation intact so history stays reproducib… 0.07s  
+  ✓ it replaying a refund five times never moves a balance twice         0.07s  
+  ✓ it the ledger unique index blocks a second reversal of the same lin… 0.07s  
+  ✓ it leaves the ledger and its snapshots in agreement                  0.08s  
+  ✓ it keeps the original allocation intact so history stays reproducib… 0.08s  
 
    PASS  Tests\Feature\SmokeTest
-  ✓ it serves the application root                                       0.02s  
+  ✓ it serves the application root                                       0.04s  
   ✓ it is connected to the dedicated test database                       0.01s  
 
-  Tests:    114 passed (14422 assertions)
-  Duration: 12.44s
+  Tests:    118 passed (14427 assertions)
+  Duration: 12.96s
 

@@ -84,6 +84,17 @@ Works on any PHP 8.3 with MySQL 8 and Redis. Set `DB_HOST=127.0.0.1`,
 `DB_PORT=3307`, `REDIS_HOST=127.0.0.1`, `REDIS_PORT=6380` to reach the containerised
 services from the host, then `composer install && php artisan migrate --seed`.
 
+### What it looks like
+
+Every state the system can reach, from the seeded demonstration data:
+
+![All balance states](docs/evidence/screenshots/balances-all-states.png)
+
+A payout whose outcome is unknown — the provider moved the money and the response was
+lost. Held, shown in amber, and deliberately **not** rendered as a failure:
+
+![Unknown payout outcome](docs/evidence/screenshots/payout-unknown-outcome.png)
+
 ---
 
 ## Running the tests
