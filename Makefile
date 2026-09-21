@@ -5,10 +5,28 @@ DC := docker compose
 APP := $(DC) exec -T app
 
 .DEFAULT_GOAL := help
-.PHONY: help env up down build restart logs shell mysql redis migrate fresh seed test test-filter stan lint lint-fix audit worker-kill horizon ps
+.PHONY: help setup env up down build restart logs shell mysql redis migrate fresh seed test test-filter stan lint lint-fix audit worker-kill horizon ps
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+
+setup: ## First run on a fresh clone: env, build, install, migrate, seed — in the right order
+	@test -f .env || cp .env.example .env
+	@$(MAKE) --no-print-directory env
+	$(DC) build
+	# Only the services that do not execute application code start first. The worker
+	# and scheduler run `php artisan` as their main process; started before vendor/
+	# exists they crash-loop on a missing autoload.php. That is exactly what the
+	# previous README produced on a fresh clone.
+	$(DC) up -d mysql redis app
+	$(DC) exec -T app composer install --no-interaction --prefer-dist
+	# Generate a key only if there is none, so re-running setup never invalidates
+	# existing sessions and encrypted values.
+	@grep -qE '^APP_KEY=.+' .env || $(DC) exec -T app php artisan key:generate --ansi
+	$(DC) up -d
+	$(DC) exec -T app php artisan migrate:fresh --seed --force
+	@echo
+	@echo "  Ready: http://localhost:$${APP_PORT:-8000}/admin   admin@career180.test / password"
 
 env: ## Write your host UID/GID into .env (needed once, before build)
 	@grep -q '^UID=' .env && sed -i "s/^UID=.*/UID=$$(id -u)/" .env || echo "UID=$$(id -u)" >> .env

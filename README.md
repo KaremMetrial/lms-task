@@ -34,15 +34,32 @@ Requires Docker and Docker Compose. Nothing else — no local PHP, MySQL or Node
 
 ```bash
 git clone <this-repo> && cd lms-task
-
-cp .env.example .env
-
-make build        # writes your UID/GID into .env, then builds
-make up           # nginx, php-fpm, mysql 8.4, redis 7, a queue worker, a scheduler
-
-docker compose exec app php artisan key:generate
-make fresh        # migrate + seed the demonstration dataset
+make setup
 ```
+
+That one target does, in order: copy `.env`, write your UID/GID into it, build the
+image, start MySQL/Redis/php-fpm, `composer install`, generate an app key if there is
+none, start the worker/scheduler/nginx, then migrate and seed the demonstration data.
+
+The order is not cosmetic. `vendor/` is not committed, and the worker and scheduler run
+`php artisan` as their main process — started before `composer install`, they crash-loop
+on a missing `autoload.php`. An earlier version of this README listed the steps by hand
+and produced exactly that on a fresh clone.
+
+<details>
+<summary>The same, by hand</summary>
+
+```bash
+cp .env.example .env
+make env                                               # UID/GID into .env
+docker compose build
+docker compose up -d mysql redis app                   # NOT the worker yet
+docker compose exec app composer install
+docker compose exec app php artisan key:generate
+docker compose up -d                                   # now the worker, scheduler, nginx
+docker compose exec app php artisan migrate:fresh --seed
+```
+</details>
 
 Then open **http://localhost:8000/admin** and sign in:
 
