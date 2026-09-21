@@ -66,9 +66,12 @@ final class PayoutItemsRelationManager extends RelationManager
                         : null),
 
                 Tables\Columns\TextColumn::make('attempts')
-                    ->label('Checks')
+                    ->label('Attempts')
                     ->alignEnd()
-                    ->tooltip('Sends plus status checks. A retry here is a status check, never a resend.'),
+                    // Stated precisely: one for the send, plus one per status check that
+                    // came back inconclusive. A conclusive check settles the item without
+                    // incrementing — an earlier tooltip claimed it counted every check.
+                    ->tooltip('The send, plus each status check that came back inconclusive. A retry is always a status check, never a resend.'),
 
                 Tables\Columns\TextColumn::make('provider_reference')
                     ->label('Provider ref')

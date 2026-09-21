@@ -35,7 +35,14 @@ final class ViewInstructorBalance extends ViewRecord
                     TextEntry::make('reserved_minor')
                         ->label('In flight')
                         ->formatStateUsing(fn (InstructorBalance $record): string => $record->reserved_minor->format())
-                        ->helperText('Held by a payout of unknown outcome.'),
+                        ->color(fn (InstructorBalance $record): string => $record->reserved_minor->isPositive() ? 'warning' : 'gray')
+                        // Only when something is actually held. The first version showed
+                        // this under 0.00 too, telling an operator a payout was in an
+                        // unknown state when nothing was — the one screen where a false
+                        // alarm is most likely to prompt someone to "fix" it by hand.
+                        ->helperText(fn (InstructorBalance $record): ?string => $record->reserved_minor->isPositive()
+                            ? 'Held by a payout whose outcome is not yet known. Not payable by another run.'
+                            : null),
 
                     TextEntry::make('available_minor')
                         ->label('Outstanding')
